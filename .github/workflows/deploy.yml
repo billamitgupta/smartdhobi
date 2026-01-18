@@ -100,17 +100,19 @@ jobs:
 
     - name: Update ECS services
       run: |
-        # Update backend service
+        # Force new deployment for backend service
         aws ecs update-service \
           --cluster $ECS_CLUSTER \
           --service $ECS_SERVICE_BACKEND \
-          --force-new-deployment
+          --force-new-deployment \
+          --task-definition $(aws ecs describe-services --cluster $ECS_CLUSTER --services $ECS_SERVICE_BACKEND --query 'services[0].taskDefinition' --output text)
         
-        # Update frontend service
+        # Force new deployment for frontend service
         aws ecs update-service \
           --cluster $ECS_CLUSTER \
           --service $ECS_SERVICE_FRONTEND \
-          --force-new-deployment
+          --force-new-deployment \
+          --task-definition $(aws ecs describe-services --cluster $ECS_CLUSTER --services $ECS_SERVICE_FRONTEND --query 'services[0].taskDefinition' --output text)
 
     - name: Update Route53 DNS records
       run: |
