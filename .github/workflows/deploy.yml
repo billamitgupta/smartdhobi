@@ -113,6 +113,22 @@ jobs:
           --service $ECS_SERVICE_FRONTEND \
           --force-new-deployment \
           --task-definition $(aws ecs describe-services --cluster $ECS_CLUSTER --services $ECS_SERVICE_FRONTEND --query 'services[0].taskDefinition' --output text)
+        
+        # Wait for backend service to stabilize
+        echo "Waiting for backend service to stabilize..."
+        aws ecs wait services-stable --cluster $ECS_CLUSTER --services $ECS_SERVICE_BACKEND
+        
+        # Check service status
+        aws ecs describe-services --cluster $ECS_CLUSTER --services $ECS_SERVICE_BACKEND --query 'services[0].{Status:status,Running:runningCount,Desired:desiredCount}'
+        
+        # If backend fails, show recent logs
+        if [ $(aws ecs describe-services --cluster $ECS_CLUSTER --services $ECS_SERVICE_BACKEND --query 'services[0].runningCount') -eq 0 ]; then
+          echo "Backend service failed to start. Checking logs..."
+          TASK_ARN=$(aws ecs list-tasks --cluster $ECS_CLUSTER --service-name $ECS_SERVICE_BACKEND --query 'taskArns[0]' --output text)
+          if [ "$TASK_ARN" != "None" ] && [ "$TASK_ARN" != "" ]; then
+            aws logs get-log-events --log-group-name "/ecs/smartdhobi-backend" --log-stream-name "ecs/smartdhobi-backend/$(echo $TASK_ARN | cut -d'/' -f3)" --limit 50 --query 'events[*].message' --output text || echo "No logs available"
+          fi
+        fi
 
     - name: Update Route53 DNS records
       run: |
