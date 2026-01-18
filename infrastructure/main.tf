@@ -143,15 +143,6 @@ resource "aws_ecr_repository" "frontend" {
   name = "${var.project_name}-frontend"
 }
 
-# Secrets Manager - use existing
-data "aws_secretsmanager_secret" "jwt_secret" {
-  name = "${var.project_name}/jwt-secret"
-}
-
-data "aws_secretsmanager_secret_version" "jwt_secret" {
-  secret_id = data.aws_secretsmanager_secret.jwt_secret.id
-}
-
 # ECS Cluster
 resource "aws_ecs_cluster" "main" {
   name = "${var.project_name}-cluster"
@@ -298,12 +289,10 @@ resource "aws_ecs_task_definition" "backend" {
         {
           name  = "NODE_ENV"
           value = "production"
-        }
-      ]
-      secrets = [
+        },
         {
-          name      = "JWT_SECRET"
-          valueFrom = data.aws_secretsmanager_secret.jwt_secret.arn
+          name  = "JWT_SECRET"
+          value = "smartdhobi-jwt-secret-key-2024-production"
         }
       ]
       logConfiguration = {
@@ -390,27 +379,6 @@ resource "aws_iam_role" "ecs_task_execution" {
 resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
   role       = aws_iam_role.ecs_task_execution.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-}
-
-# Additional policy for Secrets Manager access
-resource "aws_iam_role_policy" "ecs_secrets_policy" {
-  name = "${var.project_name}-ecs-secrets-policy"
-  role = aws_iam_role.ecs_task_execution.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "secretsmanager:GetSecretValue"
-        ]
-        Resource = [
-          data.aws_secretsmanager_secret.jwt_secret.arn
-        ]
-      }
-    ]
-  })
 }
 
 # Outputs
