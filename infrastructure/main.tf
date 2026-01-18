@@ -143,6 +143,17 @@ resource "aws_ecr_repository" "frontend" {
   name = "${var.project_name}-frontend"
 }
 
+# Secrets Manager
+resource "aws_secretsmanager_secret" "jwt_secret" {
+  name = "${var.project_name}/jwt-secret"
+  description = "JWT secret for SmartDhobi application"
+}
+
+resource "aws_secretsmanager_secret_version" "jwt_secret" {
+  secret_id = aws_secretsmanager_secret.jwt_secret.id
+  secret_string = "smartdhobi-jwt-secret-key-2024-production"
+}
+
 # ECS Cluster
 resource "aws_ecs_cluster" "main" {
   name = "${var.project_name}-cluster"
@@ -233,15 +244,39 @@ resource "aws_lb_target_group" "backend" {
   }
 }
 
-# Use existing HTTPS listener
-data "aws_lb_listener" "existing_https" {
+# ALB Listeners
+resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn
-  port              = 443
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
 }
 
-# API Listener Rule (use existing HTTPS listener)
+resource "aws_lb_listener" "https" {
+  load_balancer_arn = aws_lb.main.arn
+  port              = "443"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
+  certificate_arn   = aws_acm_certificate_validation.main.certificate_arn
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.frontend.arn
+  }
+}
+
+# API Listener Rule
 resource "aws_lb_listener_rule" "api" {
-  listener_arn = data.aws_lb_listener.existing_https.arn
+  listener_arn = aws_lb_listener.https.arn
   priority     = 100
 
   action {
@@ -284,6 +319,12 @@ resource "aws_ecs_task_definition" "backend" {
         {
           name  = "NODE_ENV"
           value = "production"
+        }
+      ]
+      secrets = [
+        {
+          name      = "JWT_SECRET"
+          valueFrom = aws_secretsmanager_secret.jwt_secret.arn
         }
       ]
       logConfiguration = {
@@ -329,24 +370,60 @@ resource "aws_ecs_task_definition" "frontend" {
   ])
 }
 
-# CloudWatch Log Groups (use existing)
-data "aws_cloudwatch_log_group" "backend" {
-  name = "/ecs/smartdhobi-backend"
+# CloudWatch Log Groups
+resource "aws_cloudwatch_log_group" "backend" {
+  name              = "/ecs/smartdhobi-backend"
+  retention_in_days = 7
 }
 
-data "aws_cloudwatch_log_group" "frontend" {
-  name = "/ecs/smartdhobi-frontend"
+resource "aws_cloudwatch_log_group" "frontend" {
+  name              = "/ecs/smartdhobi-frontend"
+  retention_in_days = 7
 }
 
-# ECS Services (use existing)
-data "aws_ecs_service" "backend" {
-  service_name = "smartdhobi-backend-service"
-  cluster_arn  = aws_ecs_cluster.main.arn
+# ECS Services
+resource "aws_ecs_service" "backend" {
+  name            = "smartdhobi-backend-service"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.backend.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = aws_subnet.public[*].id
+    security_groups  = [aws_security_group.ecs.id]
+    assign_public_ip = true
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.backend.arn
+    container_name   = "smartdhobi-backend"
+    container_port   = 1200
+  }
+
+  depends_on = [aws_lb_listener.https]
 }
 
-data "aws_ecs_service" "frontend" {
-  service_name = "smartdhobi-frontend-service"
-  cluster_arn  = aws_ecs_cluster.main.arn
+resource "aws_ecs_service" "frontend" {
+  name            = "smartdhobi-frontend-service"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.frontend.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = aws_subnet.public[*].id
+    security_groups  = [aws_security_group.ecs.id]
+    assign_public_ip = true
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.frontend.arn
+    container_name   = "smartdhobi-frontend"
+    container_port   = 1100
+  }
+
+  depends_on = [aws_lb_listener.https]
 }
 
 # IAM Role for ECS Task Execution
@@ -370,6 +447,27 @@ resource "aws_iam_role" "ecs_task_execution" {
 resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
   role       = aws_iam_role.ecs_task_execution.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+# Additional policy for Secrets Manager access
+resource "aws_iam_role_policy" "ecs_secrets_policy" {
+  name = "${var.project_name}-ecs-secrets-policy"
+  role = aws_iam_role.ecs_task_execution.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = [
+          aws_secretsmanager_secret.jwt_secret.arn
+        ]
+      }
+    ]
+  })
 }
 
 # Outputs
