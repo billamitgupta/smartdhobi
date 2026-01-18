@@ -233,6 +233,12 @@ resource "aws_lb_target_group" "backend" {
   }
 }
 
+# Import existing HTTP listener
+data "aws_lb_listener" "existing_http" {
+  load_balancer_arn = aws_lb.main.arn
+  port              = 80
+}
+
 # HTTPS Listener
 resource "aws_lb_listener" "https" {
   load_balancer_arn = aws_lb.main.arn
@@ -247,23 +253,7 @@ resource "aws_lb_listener" "https" {
   }
 }
 
-# HTTP Listener (redirect to HTTPS)
-resource "aws_lb_listener" "http" {
-  load_balancer_arn = aws_lb.main.arn
-  port              = "80"
-  protocol          = "HTTP"
-
-  default_action {
-    type = "redirect"
-    redirect {
-      port        = "443"
-      protocol    = "HTTPS"
-      status_code = "HTTP_301"
-    }
-  }
-}
-
-# API Listener Rule
+# API Listener Rule (use existing HTTPS listener)
 resource "aws_lb_listener_rule" "api" {
   listener_arn = aws_lb_listener.https.arn
   priority     = 100
