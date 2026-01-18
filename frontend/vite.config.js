@@ -7,11 +7,6 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 1100,
     strictPort: true,
-    allowedHosts: [
-      'leafkaart.com',
-      'www.leafkaart.com',
-      'leafkaart.cloud',
-      'www.leafkaart.cloud'
-    ]
+    allowedHosts: 'all'
   },
 })
