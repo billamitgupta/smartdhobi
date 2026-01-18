@@ -4,7 +4,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 export const ordersApi = createApi({
   reducerPath: 'ordersApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: `${import.meta.env.VITE_BACKEND_URL}`,
+    baseUrl: import.meta.env.VITE_BACKEND_URL || "https://api.smartdhobi.in/api",
     prepareHeaders: (headers, { getState }) => {
       const token = getState().auth?.token || localStorage.getItem('token');
       if (token) {

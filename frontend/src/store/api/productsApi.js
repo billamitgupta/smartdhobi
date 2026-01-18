@@ -7,7 +7,7 @@ import { Provider, useDispatch, useSelector } from "react-redux";
 const productsApi = createApi({
   reducerPath: "productsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_BACKEND_URL,
+    baseUrl: import.meta.env.VITE_BACKEND_URL || "https://api.smartdhobi.in/api",
     prepareHeaders: (headers) => {
       const token = localStorage.getItem("token");
       if (token) {

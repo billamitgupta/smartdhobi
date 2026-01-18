@@ -3,15 +3,19 @@ FROM node:20 AS build
 
 WORKDIR /app
 
+# Build arguments that will be available during build
+ARG VITE_BACKEND_URL=https://api.smartdhobi.in/api
+ARG VITE_APP_BASE_URL=https://api.smartdhobi.in
+
+# Set as environment variables for the build
+ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
+ENV VITE_APP_BASE_URL=$VITE_APP_BASE_URL
+
 COPY package*.json ./
 RUN npm ci
 
 # Copy source code
 COPY . .
-
-# Set environment variables for build
-ENV VITE_API_BASE_URL=https://api.smartdhobi.in/api
-ENV VITE_APP_BASE_URL=https://api.smartdhobi.in
 
 RUN npm run build
 
