@@ -292,7 +292,43 @@ resource "aws_ecs_task_definition" "backend" {
         },
         {
           name  = "JWT_SECRET"
-          value = "smartdhobi-jwt-secret-key-2024-production"
+          value = "lajfa123455"
+        },
+        {
+          name  = "MONGODB_URL"
+          value = "mongodb+srv://DhobiProject12345:DhobiProject12345@cluster0.jfavd9r.mongodb.net/DhobiProject?retryWrites=true&w=majority&appName=Cluster0"
+        },
+        {
+          name  = "EMAIL_USERNAME"
+          value = "deepakkr900678@gmail.com"
+        },
+        {
+          name  = "EMAIL_PASSWORD"
+          value = "rqad rfim syij flnw"
+        },
+        {
+          name  = "CLOUD_NAME"
+          value = "dbb8jigqx"
+        },
+        {
+          name  = "API_KEY"
+          value = "724834971689322"
+        },
+        {
+          name  = "API_SECRET"
+          value = "NqtMXSguHmMAhSNT-plWl9hQSXI"
+        },
+        {
+          name  = "RAZORPAY_KEY_ID"
+          value = "rzp_test_P9V0UOiP6JvyWd"
+        },
+        {
+          name  = "RAZORPAY_KEY_SECRET"
+          value = "HED7ihE52giDFsNBzhUENmg4"
+        },
+        {
+          name  = "RAZORPAY_WEBHOOK_SECRET"
+          value = "your_webhook_secret_here"
         }
       ]
       logConfiguration = {
