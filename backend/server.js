@@ -17,7 +17,10 @@ const server = http.createServer(app);
 /* =========================
    SOCKET INITIALIZATION
 ========================= */
-initSocket(server);
+// Only initialize socket if not in production without proper config
+if (process.env.NODE_ENV !== 'production' || process.env.MONGODB_URL) {
+  initSocket(server);
+}
 
 /* =========================
    MIDDLEWARES
@@ -60,8 +63,13 @@ app.use("/uploads", express.static("uploads"));
 /* =========================
    DATABASE & CLOUDINARY
 ========================= */
-database.connectDb();
-cloudinaryConnect();
+// Only connect to database and cloudinary if configured
+if (process.env.MONGODB_URL && process.env.MONGODB_URL !== 'mongodb://localhost:27017/smartdhobi') {
+  database.connectDb();
+}
+if (process.env.CLOUD_NAME) {
+  cloudinaryConnect();
+}
 
 /* =========================
    ROUTES
