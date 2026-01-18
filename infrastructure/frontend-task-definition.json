@@ -1,0 +1,48 @@
+{
+  "family": "smartdhobi-frontend-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/smartdhobi-ecs-task-execution-role",
+  "containerDefinitions": [
+    {
+      "name": "smartdhobi-frontend",
+      "image": "ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/smartdhobi-frontend:latest",
+      "portMappings": [
+        {
+          "containerPort": 1100,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "environment": [
+        {
+          "name": "NODE_ENV",
+          "value": "production"
+        },
+        {
+          "name": "VITE_API_BASE_URL",
+          "value": "https://api.smartdhobi.in/api"
+        },
+        {
+          "name": "VITE_APP_BASE_URL",
+          "value": "https://api.smartdhobi.in"
+        },
+        {
+          "name": "VITE_APP_RAZORPAY_SCRIPT_URL",
+          "value": "https://checkout.razorpay.com/v1/checkout.js"
+        }
+      ],
+      "secrets": [],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/smartdhobi-frontend",
+          "awslogs-region": "ap-south-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

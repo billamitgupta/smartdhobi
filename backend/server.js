@@ -27,14 +27,17 @@ app.use(
     origin: [
       "http://localhost:1100",
       "http://62.72.12.162:1100",
-
+      
       "https://leafkaart.com",
       "https://www.leafkaart.com",
       "https://api.leafkaart.com",
 
-      "https://leafkaart.cloud",
-      "https://www.leafkaart.cloud",
-      "https://api.leafkaart.cloud"
+      "https://smartdhobi.in",
+      "https://www.smartdhobi.in",
+      "https://api.smartdhobi.in",
+      "http://localhost:5173", // Vite dev server
+      "http://localhost:3000"
+      
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
@@ -125,16 +128,20 @@ app.use("/api/notification", notificationRoutes);
 app.use("/api/banner", bannerRoutes);
 
 /* =========================
-   DEFAULT ROUTE
+   DEFAULT ROUTE & HEALTH CHECK
 ========================= */
 app.get("/", (req, res) => {
-  res.send("Welcome to Leaf E-Commerce App API 🚀");
+  res.send("Welcome to SmartDhobi API 🚀");
+});
+
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "OK", message: "SmartDhobi API is running" });
 });
 
 /* =========================
    START SERVER
 ========================= */
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 1200;
 
 server.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);

@@ -3,8 +3,6 @@ name: Deploy to AWS
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
 
 env:
   AWS_REGION: ap-south-1
@@ -13,6 +11,7 @@ env:
   ECS_SERVICE_BACKEND: smartdhobi-backend-service
   ECS_SERVICE_FRONTEND: smartdhobi-frontend-service
   ECS_CLUSTER: smartdhobi-cluster
+  DOMAIN: smartdhobi.in
 
 jobs:
   test:
@@ -60,6 +59,23 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.5.0
+
+    - name: Deploy Infrastructure
+      run: |
+        cd infrastructure
+        terraform init
+        terraform plan -out=tfplan
+        terraform apply -auto-approve tfplan
+        
+        # Export outputs for later steps
+        echo "ALB_DNS_NAME=$(terraform output -raw alb_dns_name)" >> $GITHUB_ENV
+        echo "ALB_ZONE_ID=$(terraform output -raw alb_zone_id)" >> $GITHUB_ENV
+        echo "HOSTED_ZONE_ID=$(terraform output -raw route53_zone_id)" >> $GITHUB_ENV
+
     - name: Login to Amazon ECR
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
@@ -82,16 +98,76 @@ jobs:
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:$IMAGE_TAG
 
-    - name: Update backend ECS service
+    - name: Update ECS services
       run: |
+        # Update backend service
         aws ecs update-service \
           --cluster $ECS_CLUSTER \
           --service $ECS_SERVICE_BACKEND \
           --force-new-deployment
-
-    - name: Update frontend ECS service
-      run: |
+        
+        # Update frontend service
         aws ecs update-service \
           --cluster $ECS_CLUSTER \
           --service $ECS_SERVICE_FRONTEND \
           --force-new-deployment
+
+    - name: Update Route53 DNS records
+      run: |
+        # Update smartdhobi.in A record
+        aws route53 change-resource-record-sets \
+          --hosted-zone-id $HOSTED_ZONE_ID \
+          --change-batch '{
+            "Changes": [{
+              "Action": "UPSERT",
+              "ResourceRecordSet": {
+                "Name": "'$DOMAIN'",
+                "Type": "A",
+                "AliasTarget": {
+                  "DNSName": "'$ALB_DNS_NAME'",
+                  "EvaluateTargetHealth": false,
+                  "HostedZoneId": "'$ALB_ZONE_ID'"
+                }
+              }
+            }]
+          }'
+        
+        # Update www.smartdhobi.in A record
+        aws route53 change-resource-record-sets \
+          --hosted-zone-id $HOSTED_ZONE_ID \
+          --change-batch '{
+            "Changes": [{
+              "Action": "UPSERT",
+              "ResourceRecordSet": {
+                "Name": "www.'$DOMAIN'",
+                "Type": "A",
+                "AliasTarget": {
+                  "DNSName": "'$ALB_DNS_NAME'",
+                  "EvaluateTargetHealth": false,
+                  "HostedZoneId": "'$ALB_ZONE_ID'"
+                }
+              }
+            }]
+          }'
+        
+        # Update api.smartdhobi.in A record
+        aws route53 change-resource-record-sets \
+          --hosted-zone-id $HOSTED_ZONE_ID \
+          --change-batch '{
+            "Changes": [{
+              "Action": "UPSERT",
+              "ResourceRecordSet": {
+                "Name": "api.'$DOMAIN'",
+                "Type": "A",
+                "AliasTarget": {
+                  "DNSName": "'$ALB_DNS_NAME'",
+                  "EvaluateTargetHealth": false,
+                  "HostedZoneId": "'$ALB_ZONE_ID'"
+                }
+              }
+            }]
+          }'
+        
+        echo "Deployment complete!"
+        echo "Frontend: https://$DOMAIN"
+        echo "API: https://api.$DOMAIN"

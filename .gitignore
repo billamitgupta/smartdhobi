@@ -137,4 +137,6 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
-infrastructure
+terraform
+/.terraform/*
+infrastructure/.terraform/providers/registry.terraform.io/hashicorp/aws/5.100.0/darwin_arm64/*
