@@ -6,6 +6,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
+# Copy source code
+COPY . .
+
 # Remove .env from build
 RUN rm -f .env
 RUN npm run build
