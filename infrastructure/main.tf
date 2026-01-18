@@ -233,12 +233,6 @@ resource "aws_lb_target_group" "backend" {
   }
 }
 
-# Import existing HTTP listener
-data "aws_lb_listener" "existing_http" {
-  load_balancer_arn = aws_lb.main.arn
-  port              = 80
-}
-
 # HTTPS Listener
 resource "aws_lb_listener" "https" {
   load_balancer_arn = aws_lb.main.arn
