@@ -225,7 +225,7 @@ resource "aws_lb_target_group" "backend" {
     healthy_threshold   = 2
     interval            = 30
     matcher             = "200"
-    path                = "/health"
+    path                = "/"
     port                = "traffic-port"
     protocol            = "HTTP"
     timeout             = 5
@@ -338,15 +338,59 @@ data "aws_cloudwatch_log_group" "frontend" {
   name = "/ecs/smartdhobi-frontend"
 }
 
-# ECS Services (use existing)
-data "aws_ecs_service" "backend" {
-  service_name = "smartdhobi-backend-service"
-  cluster_arn  = aws_ecs_cluster.main.arn
+# ECS Services (force new deployment)
+resource "aws_ecs_service" "backend" {
+  name            = "smartdhobi-backend-service"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.backend.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+  force_new_deployment = true
+
+  network_configuration {
+    subnets         = aws_subnet.public[*].id
+    security_groups = [aws_security_group.ecs.id]
+    assign_public_ip = true
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.backend.arn
+    container_name   = "smartdhobi-backend"
+    container_port   = 1200
+  }
+
+  depends_on = [data.aws_lb_listener.existing_https]
+
+  lifecycle {
+    ignore_changes = [task_definition]
+  }
 }
 
-data "aws_ecs_service" "frontend" {
-  service_name = "smartdhobi-frontend-service"
-  cluster_arn  = aws_ecs_cluster.main.arn
+resource "aws_ecs_service" "frontend" {
+  name            = "smartdhobi-frontend-service"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.frontend.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+  force_new_deployment = true
+
+  network_configuration {
+    subnets         = aws_subnet.public[*].id
+    security_groups = [aws_security_group.ecs.id]
+    assign_public_ip = true
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.frontend.arn
+    container_name   = "smartdhobi-frontend"
+    container_port   = 1100
+  }
+
+  depends_on = [data.aws_lb_listener.existing_https]
+
+  lifecycle {
+    ignore_changes = [task_definition]
+  }
 }
 
 # IAM Role for ECS Task Execution
