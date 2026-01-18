@@ -9,8 +9,10 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Remove .env from build
-RUN rm -f .env
+# Set environment variables for build
+ENV VITE_API_BASE_URL=https://api.smartdhobi.in/api
+ENV VITE_APP_BASE_URL=https://api.smartdhobi.in
+
 RUN npm run build
 
 # Production stage
