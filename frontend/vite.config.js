@@ -9,4 +9,10 @@ export default defineConfig({
     strictPort: true,
     allowedHosts: 'all'
   },
+  preview: {
+    host: '0.0.0.0',
+    port: 1100,
+    strictPort: true,
+    allowedHosts: 'all'
+  },
 })
