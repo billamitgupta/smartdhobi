@@ -6,7 +6,6 @@ const bodyParser = require("body-parser");
 const fileUpload = require("express-fileupload");
 
 const database = require("./config/database");
-const { cloudinaryConnect } = require("./config/cloudinary");
 const { initSocket } = require("./socket");
 
 dotenv.config();
@@ -67,73 +66,92 @@ app.use("/uploads", express.static("uploads"));
 if (process.env.MONGODB_URL && process.env.MONGODB_URL !== 'mongodb://localhost:27017/smartdhobi') {
   database.connectDb();
 }
-if (process.env.CLOUD_NAME) {
-  cloudinaryConnect();
-}
 
 /* =========================
    ROUTES
 ========================= */
 
 // AUTH
+// const authRoutes = require("./routes/authRoutes");
+
+// // ADMIN ROUTES
+// const adminEmployeeRoutes = require("./routes/adminRoutes/adminEmployeeRoutes");
+// const adminDealerRoutes = require("./routes/adminRoutes/adminDealerRoutes");
+// const adminProductRoutes = require("./routes/adminRoutes/adminProductRoutes");
+// const adminCategoryRoutes = require("./routes/adminRoutes/adminCategoryRoutes");
+// const adminSubCategoryRoutes = require("./routes/adminRoutes/adminSubCategoryRoutes");
+// const adminDashboardRoutes = require("./routes/adminRoutes/adminDashboardRoutes");
+// const adminOrderRoutes = require("./routes/adminRoutes/adminOrderRoutes");
+
+// // EMPLOYEE ROUTES
+// const employeeProductRoutes = require("./routes/employeeRoutes/employeeProductRoutes");
+// const employeeOrderRoutes = require("./routes/employeeRoutes/employeeOrderRoutes");
+
+// // DEALER ROUTES
+// const dealerProductRoutes = require("./routes/dealerRoutes/dealerProductRoutes");
+// const dealerOrderRoutes = require("./routes/dealerRoutes/dealerOrderRoutes");
+
+// // CUSTOMER ROUTES
+// const productRoutes = require("./routes/customerRoutes/productRoutes");
+// const cartRoutes = require("./routes/customerRoutes/cartRoutes");
+// const wishlistRoutes = require("./routes/customerRoutes/wishlistRoutes");
+// const addressRoutes = require("./routes/customerRoutes/addressRoutes");
+// const orderRoutes = require("./routes/customerRoutes/orderRoutes");
+// const reviewRoutes = require("./routes/customerRoutes/reviewRoutes");
+
+// // COMMON
+// const notificationRoutes = require("./routes/notificationRoutes");
+// const bannerRoutes = require("./routes/adminRoutes/adminBannerRoutes");
+
+// /* =========================
+//    ROUTE MAPPINGS
+// ========================= */
+// app.use("/api/auth", authRoutes);
+
+// app.use("/api/admin/employees", adminEmployeeRoutes);
+// app.use("/api/admin/dealers", adminDealerRoutes);
+// app.use("/api/admin/products", adminProductRoutes);
+// app.use("/api/admin/categories", adminCategoryRoutes);
+// app.use("/api/admin/subCategories", adminSubCategoryRoutes);
+// app.use("/api/admin/dashboard", adminDashboardRoutes);
+// app.use("/api/admin/orders", adminOrderRoutes);
+
+// app.use("/api/employee/products", employeeProductRoutes);
+// app.use("/api/employee/orders", employeeOrderRoutes);
+
+// app.use("/api/dealer/products", dealerProductRoutes);
+// app.use("/api/dealer/orders", dealerOrderRoutes);
+
+// app.use("/api/products", productRoutes);
+// app.use("/api/cart", cartRoutes);
+// app.use("/api/wishlist", wishlistRoutes);
+// app.use("/api/address", addressRoutes);
+// app.use("/api/orders", orderRoutes);
+// app.use("/api/reviews", reviewRoutes);
+// app.use("/api/notification", notificationRoutes);
+// app.use("/api/banner", bannerRoutes);
+
+
+
+// === Routes ===
 const authRoutes = require("./routes/authRoutes");
-
-// ADMIN ROUTES
-const adminEmployeeRoutes = require("./routes/adminRoutes/adminEmployeeRoutes");
-const adminDealerRoutes = require("./routes/adminRoutes/adminDealerRoutes");
-const adminProductRoutes = require("./routes/adminRoutes/adminProductRoutes");
-const adminCategoryRoutes = require("./routes/adminRoutes/adminCategoryRoutes");
-const adminSubCategoryRoutes = require("./routes/adminRoutes/adminSubCategoryRoutes");
-const adminDashboardRoutes = require("./routes/adminRoutes/adminDashboardRoutes");
-const adminOrderRoutes = require("./routes/adminRoutes/adminOrderRoutes");
-
-// EMPLOYEE ROUTES
-const employeeProductRoutes = require("./routes/employeeRoutes/employeeProductRoutes");
-const employeeOrderRoutes = require("./routes/employeeRoutes/employeeOrderRoutes");
-
-// DEALER ROUTES
-const dealerProductRoutes = require("./routes/dealerRoutes/dealerProductRoutes");
-const dealerOrderRoutes = require("./routes/dealerRoutes/dealerOrderRoutes");
-
-// CUSTOMER ROUTES
-const productRoutes = require("./routes/customerRoutes/productRoutes");
-const cartRoutes = require("./routes/customerRoutes/cartRoutes");
-const wishlistRoutes = require("./routes/customerRoutes/wishlistRoutes");
-const addressRoutes = require("./routes/customerRoutes/addressRoutes");
-const orderRoutes = require("./routes/customerRoutes/orderRoutes");
-const reviewRoutes = require("./routes/customerRoutes/reviewRoutes");
-
-// COMMON
+const userRoutes = require("./routes/userRoutes");
+const adminRoutes = require("./routes/adminRoutes");
+const providerRoutes = require("./routes/providerRoutes");
+const orderRoutes = require("./routes/orderRoutes");
+const reviewRoutes = require("./routes/reviewRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
-const bannerRoutes = require("./routes/adminRoutes/adminBannerRoutes");
 
-/* =========================
-   ROUTE MAPPINGS
-========================= */
+app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
-
-app.use("/api/admin/employees", adminEmployeeRoutes);
-app.use("/api/admin/dealers", adminDealerRoutes);
-app.use("/api/admin/products", adminProductRoutes);
-app.use("/api/admin/categories", adminCategoryRoutes);
-app.use("/api/admin/subCategories", adminSubCategoryRoutes);
-app.use("/api/admin/dashboard", adminDashboardRoutes);
-app.use("/api/admin/orders", adminOrderRoutes);
-
-app.use("/api/employee/products", employeeProductRoutes);
-app.use("/api/employee/orders", employeeOrderRoutes);
-
-app.use("/api/dealer/products", dealerProductRoutes);
-app.use("/api/dealer/orders", dealerOrderRoutes);
-
-app.use("/api/products", productRoutes);
-app.use("/api/cart", cartRoutes);
-app.use("/api/wishlist", wishlistRoutes);
-app.use("/api/address", addressRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/providers", providerRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/payments", paymentRoutes);
 app.use("/api/notification", notificationRoutes);
-app.use("/api/banner", bannerRoutes);
+
 
 /* =========================
    DEFAULT ROUTE & HEALTH CHECK

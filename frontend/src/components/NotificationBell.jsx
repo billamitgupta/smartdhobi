@@ -1,71 +1,90 @@
-import React, { useState } from "react";
-import { Bell } from "lucide-react";
-import { useNotifications } from "../hooks/useNotifications";
+import React, { useEffect, useState } from "react";
+import { io } from "socket.io-client";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import {
+  fetchNotifications,
+  updateNotificationClick,
+} from "../auth/ApiConnect";
 
-const NotificationBell = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const { notifications, unreadCount, markNotificationAsRead } = useNotifications();
+const socket = io("https://api.smartdhobi.in");
 
-  const handleNotificationClick = (notification) => {
-    if (!notification.isRead) {
-      markNotificationAsRead(notification._id);
+const NotificationBell = ({ userId }) => {
+  const [notifications, setNotifications] = useState([]);
+  const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (userId) {
+      socket.emit("join", userId);
     }
-    // Navigate to relevant page based on notification type
-    // navigate to order/dealer/product based on notification.type
+  }, [userId]);
+
+  useEffect(() => {
+    socket.on("receive-notification", (notification) => {
+      setNotifications((prev) => [notification, ...prev]);
+    });
+    return () => socket.off("receive-notification");
+  }, []);
+
+  useEffect(() => {
+    if (userId) {
+      getNotifications();
+    }
+  }, [userId]);
+
+  const getNotifications = async () => {
+    try {
+      const res = await fetchNotifications(userId);
+      setNotifications(res);
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
+    }
+  };
+
+  const handleNotificationClick = (noti) => {
+    setOpen(false);
+
+    updateNotificationClick(noti);
+    if (noti.type === "order" && noti.orderId) {
+      navigate(`orders`);
+    } else if (noti.type === "service") {
+      navigate(`/services/${noti.orderId}`);
+    } else {
+      navigate(`/admin/users`);
+    }
   };
 
   return (
     <div className="relative">
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+        className="relative text-gray-700 hover:text-black"
+        onClick={() => setOpen(!open)}
       >
-        <Bell className="w-6 h-6" />
-        {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-            {unreadCount > 9 ? "9+" : unreadCount}
+        🔔
+        {notifications.length > 0 && (
+          <span className="absolute top-0 right-0 bg-red-500 text-white text-xs px-1 rounded-full">
+            {notifications.length}
           </span>
         )}
       </button>
 
-      {isOpen && (
-        <>
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setIsOpen(false)}
-          />
-          <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl z-20 max-h-96 overflow-y-auto">
-            <div className="p-4 border-b">
-              <h3 className="font-semibold text-gray-800">Notifications</h3>
-              {unreadCount > 0 && (
-                <p className="text-sm text-gray-500">{unreadCount} unread</p>
-              )}
-            </div>
-            
-            {notifications.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                No notifications yet
-              </div>
-            ) : (
-              <div className="divide-y">
-                {notifications.map((notification) => (
-                  <div
-                    key={notification._id}
-                    onClick={() => handleNotificationClick(notification)}
-                    className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                      !notification.isRead ? "bg-blue-50" : ""
-                    }`}
-                  >
-                    <p className="text-sm text-gray-800">{notification.message}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {new Date(notification.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </>
+      {open && (
+        <div className="absolute right-0 mt-2 w-64 bg-white shadow-lg rounded-lg z-50 max-h-80 overflow-y-auto">
+          {notifications.length === 0 ? (
+            <div className="p-4 text-gray-500">No notifications</div>
+          ) : (
+            notifications.map((noti, index) => (
+              <button
+                key={index}
+                onClick={() => handleNotificationClick(noti)}
+                className="w-full text-left p-3 border-b hover:bg-gray-100 text-sm text-gray-700"
+              >
+                {noti.message}
+              </button>
+            ))
+          )}
+        </div>
       )}
     </div>
   );

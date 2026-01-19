@@ -1,5 +1,5 @@
 const { Server } = require("socket.io");
-const Notification = require("./models/Notification");
+const Notification = require("./models/notificationModel");
 
 let ioInstance;
 const connectedUsers = {};

@@ -1,18 +1,18 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    tailwindcss(),
+  ],
   server: {
     host: '0.0.0.0',
     port: 1100,
     strictPort: true,
-    allowedHosts: 'all'
+    allowedHosts: ['smartdhobi.in', 'www.smartdhobi.in']  // ✅ both domains added
   },
   preview: {
     host: '0.0.0.0',
-    port: 1100,
-    strictPort: true,
-    allowedHosts: 'all'
-  },
+    port: 1100
+  }
 })

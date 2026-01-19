@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const User = require('../models/userModel');
 
 const authMiddleware = async (req, res, next) => {
     const token = req.header('Authorization');
@@ -9,13 +9,16 @@ const authMiddleware = async (req, res, next) => {
     }
 
     try {
+        // Remove "Bearer " prefix if present
         const decoded = jwt.verify(token.replace('Bearer ', ''), process.env.JWT_SECRET);
+
+        // Attach user info to the request object
         const user = await User.findById(decoded.id);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        req.user = user;
+        req.user = user; // User data is attached to request
         next();
     } catch (error) {
         console.error(error);
